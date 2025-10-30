@@ -1,6 +1,5 @@
 import streamlit as st
 from datetime import datetime
-from src.activity_log import ActivityEntry  # ✅ import class chuẩn
 
 def log_ai_activity(action: str, details: str = "", metadata=None):
     """Ghi lại log hoạt động AI."""

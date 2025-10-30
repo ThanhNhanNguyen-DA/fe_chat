@@ -1,5 +1,5 @@
 import streamlit as st
-from src.chat_utils import create_new_chat, rename_chat, delete_chat, share_chat, generate_chat_title
+from src.chat_utils import create_new_chat
 
 def render_sidebar():
     """Render sidebar, chat history, và các nút điều khiển (phiên bản không dùng st_click_detector)."""

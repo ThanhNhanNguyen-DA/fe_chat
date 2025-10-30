@@ -44,7 +44,7 @@ def get_bg_color(summary: str) -> str:
 
 def render_activity_log():
     """Hiển thị log hoạt động realtime: tự cập nhật khi stream chạy."""
-    st.subheader("⚡ Nhật ký hoạt động (Realtime)")
+    st.subheader("⚡ Activity")
 
     activities = st.session_state.get("activities", [])
     if not activities:
