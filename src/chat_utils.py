@@ -1,6 +1,6 @@
 import streamlit as st
 from datetime import datetime
-
+from src.activity_log import ActivityEntry  # ✅ import class chuẩn
 
 def log_ai_activity(action: str, details: str = "", metadata=None):
     """Ghi lại log hoạt động AI."""
@@ -12,6 +12,7 @@ def log_ai_activity(action: str, details: str = "", metadata=None):
         "metadata": metadata or {}
     })
     st.session_state.activities = st.session_state.activities[:15]
+
 
 
 def create_new_chat():

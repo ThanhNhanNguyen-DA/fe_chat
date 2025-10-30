@@ -1,9 +1,6 @@
 import streamlit as st
 from datetime import datetime
 
-# --------------------------------------------
-# 🎨 Style configuration (dễ đổi màu về sau)
-# --------------------------------------------
 STYLE = {
     "base_bg": "#f9fafb",
     "border": "#e5e7eb",
@@ -11,53 +8,43 @@ STYLE = {
     "time_color": "#94a3b8",
 }
 
-# --------------------------------------------
-# 🧠 Hàm tóm tắt hành động
-# --------------------------------------------
 def summarize_activity(activity: dict) -> str:
-    """Chuyển metadata kỹ thuật thành mô tả thân thiện, 1 dòng."""
+    """Tóm tắt ngắn gọn hành động theo metadata."""
     action = activity.get("action", "")
     meta = activity.get("metadata", {}) or {}
     node = meta.get("langgraph_node", "")
     model = meta.get("ls_model_name", "")
 
-    # Map logic thân thiện
     if "call_model" in node:
         return f"📡 Đang gửi yêu cầu đến {model or 'mô hình AI'}"
     if "retrieval" in node or "vector" in node:
         return "🔍 Đang truy xuất dữ liệu từ kho tri thức CMC"
     if "embedding" in node:
-        return "🧠 Đang tạo vector embedding cho dữ liệu"
+        return "🧠 Đang tạo vector embedding"
     if "judge" in node:
         return "⚖️ Đang chấm điểm phản hồi mô hình"
     if "summary" in node or "aggregate" in node:
         return "📊 Đang tổng hợp kết quả đánh giá"
-    if "Hoàn tất" in action or "end" in action:
+    if "Hoàn tất" in action:
         return "✅ Hoàn tất tiến trình"
-    if "Lỗi" in action or "❌" in action:
+    if "Lỗi" in action:
         return "❌ Lỗi khi gọi backend"
     return "🔸 " + (action or "Đang xử lý...")
 
-# --------------------------------------------
-# 🌈 Tùy màu nền theo hành động
-# --------------------------------------------
 def get_bg_color(summary: str) -> str:
     if "Lỗi" in summary:
-        return "#fee2e2"   # đỏ nhạt
-    if "Hoàn tất" in summary or "✅" in summary:
-        return "#dcfce7"   # xanh nhạt
-    if "truy xuất" in summary or "retrieval" in summary:
-        return "#fef9c3"   # vàng nhạt
-    if "gửi yêu cầu" in summary or "📡" in summary:
-        return "#e0f2fe"   # xanh da trời nhạt
+        return "#fee2e2"
+    if "Hoàn tất" in summary:
+        return "#dcfce7"
+    if "truy xuất" in summary:
+        return "#fef9c3"
+    if "gửi yêu cầu" in summary:
+        return "#e0f2fe"
     return STYLE["base_bg"]
 
-# --------------------------------------------
-# 🧩 Render UI
-# --------------------------------------------
 def render_activity_log():
-    """Hiển thị log hoạt động AI - chỉ 1 dòng mô tả, có màu và icon."""
-    st.subheader("⚡ Activity")
+    """Hiển thị log hoạt động realtime: tự cập nhật khi stream chạy."""
+    st.subheader("⚡ Nhật ký hoạt động (Realtime)")
 
     activities = st.session_state.get("activities", [])
     if not activities:
