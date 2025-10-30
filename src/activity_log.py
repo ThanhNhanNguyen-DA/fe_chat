@@ -57,7 +57,7 @@ def get_bg_color(summary: str) -> str:
 # --------------------------------------------
 def render_activity_log():
     """Hiển thị log hoạt động AI - chỉ 1 dòng mô tả, có màu và icon."""
-    st.subheader("⚡ Nhật ký hoạt động")
+    st.subheader("⚡ Activity")
 
     activities = st.session_state.get("activities", [])
     if not activities:

@@ -22,7 +22,7 @@ def build_url(path: str) -> str:
 def get_page_config() -> dict:
     """Cấu hình trang chính."""
     return {
-        "page_title": os.getenv("APP_NAME", "CMC Chatbot Q&A"),
+        "page_title": os.getenv("APP_NAME", "CMC Q&A"),
         "page_icon": os.getenv("PAGE_ICON", "🤖"),
         "layout": os.getenv("LAYOUT", "wide"),
         "initial_sidebar_state": os.getenv("SIDEBAR_STATE", "expanded"),

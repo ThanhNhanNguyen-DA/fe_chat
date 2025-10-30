@@ -33,48 +33,48 @@ def create_new_chat():
     return chat_id
 
 
-def rename_chat(chat_id, new_name):
-    """Renames a specific chat."""
-    if chat_id in st.session_state.chat_history:
-        st.session_state.chat_history[chat_id]["title"] = new_name.strip()[:30]
+# def rename_chat(chat_id, new_name):
+#     """Renames a specific chat."""
+#     if chat_id in st.session_state.chat_history:
+#         st.session_state.chat_history[chat_id]["title"] = new_name.strip()[:30]
 
 
-def share_chat(chat_id):
-    """Show a modal with shareable chat content."""
-    if chat_id in st.session_state.chat_history:
-        chat_data = st.session_state.chat_history[chat_id]
-        shareable_text = f"📜 {chat_data['title']}\nCreated: {chat_data['created_at']}\n\n"
+# def share_chat(chat_id):
+#     """Show a modal with shareable chat content."""
+#     if chat_id in st.session_state.chat_history:
+#         chat_data = st.session_state.chat_history[chat_id]
+#         shareable_text = f"📜 {chat_data['title']}\nCreated: {chat_data['created_at']}\n\n"
 
-        for msg in chat_data["messages"]:
-            role_name = "You" if msg["role"] == "user" else "Assistant"
-            shareable_text += f"{role_name}: {msg['content']}\n\n"
+#         for msg in chat_data["messages"]:
+#             role_name = "You" if msg["role"] == "user" else "Assistant"
+#             shareable_text += f"{role_name}: {msg['content']}\n\n"
 
-        # Dùng expander để hiển thị
-        with st.expander("📤 Shareable Chat Preview", expanded=True):
-            st.text_area(
-                "Copy nội dung bên dưới:",
-                value=shareable_text.strip(),
-                height=200
-            )
-            st.download_button(
-                label="📥 Tải về (.txt)",
-                data=shareable_text.strip(),
-                file_name=f"{chat_data['title'].replace(' ', '_')}.txt",
-                mime="text/plain"
-            )
+#         # Dùng expander để hiển thị
+#         with st.expander("📤 Shareable Chat Preview", expanded=True):
+#             st.text_area(
+#                 "Copy nội dung bên dưới:",
+#                 value=shareable_text.strip(),
+#                 height=200
+#             )
+#             st.download_button(
+#                 label="📥 Tải về (.txt)",
+#                 data=shareable_text.strip(),
+#                 file_name=f"{chat_data['title'].replace(' ', '_')}.txt",
+#                 mime="text/plain"
+#             )
 
 
-def delete_chat(chat_id):
-    """Deletes a specific chat."""
-    if chat_id in st.session_state.chat_history:
-        del st.session_state.chat_history[chat_id]
+# def delete_chat(chat_id):
+#     """Deletes a specific chat."""
+#     if chat_id in st.session_state.chat_history:
+#         del st.session_state.chat_history[chat_id]
 
-        if st.session_state.current_chat_id == chat_id:
-            st.session_state.current_chat_id = None
+#         if st.session_state.current_chat_id == chat_id:
+#             st.session_state.current_chat_id = None
 
-        # Reset các trạng thái UI
-        st.session_state.rename_mode = None
-        st.session_state.share_chat_id = None
+#         # Reset các trạng thái UI
+#         st.session_state.rename_mode = None
+        # st.session_state.share_chat_id = None
 
 
 def generate_chat_title(user_message: str):

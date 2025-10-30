@@ -40,7 +40,7 @@ def get_ai_response_stream(
         "activity": activity,
     }
 
-    log_ai_activity("🔁 Gửi request streaming tới backend", str(payload))
+    log_ai_activity("🔁 Đang gửi yêu cầu ", str(payload))
 
     try:
         with requests.post(api_url, params=payload, stream=True, timeout=get_stream_timeout()) as res:
