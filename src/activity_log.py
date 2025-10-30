@@ -1,80 +1,88 @@
-import streamlit as st
+import time
 from datetime import datetime
+from dataclasses import dataclass, asdict
+from typing import Optional, Dict, Any, Generator
+import streamlit as st
 
 STYLE = {
-    "base_bg": "#f9fafb",
-    "border": "#e5e7eb",
-    "text_color": "#1e293b",
-    "time_color": "#94a3b8",
+    "bg": "#1e293b",
+    "border": "#334155",
+    "text": "#f1f5f9",
+    "time": "#94a3b8",
 }
 
-def summarize_activity(activity: dict) -> str:
-    """Tóm tắt ngắn gọn hành động theo metadata."""
-    action = activity.get("action", "")
-    meta = activity.get("metadata", {}) or {}
-    node = meta.get("langgraph_node", "")
-    model = meta.get("ls_model_name", "")
 
-    if "call_model" in node:
-        return f"📡 Đang gửi yêu cầu đến {model or 'mô hình AI'}"
-    if "retrieval" in node or "vector" in node:
-        return "🔍 Đang truy xuất dữ liệu từ kho tri thức CMC"
-    if "embedding" in node:
-        return "🧠 Đang tạo vector embedding"
-    if "judge" in node:
-        return "⚖️ Đang chấm điểm phản hồi mô hình"
-    if "summary" in node or "aggregate" in node:
-        return "📊 Đang tổng hợp kết quả đánh giá"
-    if "Hoàn tất" in action:
-        return "✅ Hoàn tất tiến trình"
-    if "Lỗi" in action:
-        return "❌ Lỗi khi gọi backend"
-    return "🔸 " + (action or "Đang xử lý...")
+@dataclass
+class ActivityEntry:
+    time: str
+    action: str
+    details: str
+    metadata: Optional[Dict[str, Any]] = None
 
-def get_bg_color(summary: str) -> str:
-    if "Lỗi" in summary:
-        return "#fee2e2"
-    if "Hoàn tất" in summary:
-        return "#dcfce7"
-    if "truy xuất" in summary:
-        return "#fef9c3"
-    if "gửi yêu cầu" in summary:
-        return "#e0f2fe"
-    return STYLE["base_bg"]
+    @staticmethod
+    def create(action: str, details: str = "", metadata=None):
+        return ActivityEntry(
+            time=datetime.now().strftime("%H:%M:%S"),
+            action=action,
+            details=details,
+            metadata=metadata or {},
+        )
+
+
+def format_log(log: Dict[str, Any]) -> str:
+    """Format HTML 1 dòng log (dark theme)."""
+    return f"""
+    <div style='background:{STYLE["bg"]};
+                border:1px solid {STYLE["border"]};
+                border-radius:10px;
+                padding:8px 10px;
+                margin-bottom:6px;
+                color:{STYLE["text"]};
+                font-size:13px;'>
+        <b>{log['action']}</b> — {log.get('details', '')}
+        <span style='float:right;color:{STYLE["time"]};
+                     font-size:11px'>{log.get('time', '')}</span>
+    </div>
+    """
+
+
+def log_ai_activity(action: str, details: str = "", metadata=None):
+    """Ghi log (Producer)."""
+    entry = ActivityEntry.create(action, details, metadata)
+    st.session_state.setdefault("activities", [])
+    st.session_state.activities.append(asdict(entry))
+
+
+def activity_stream() -> Generator[str, None, None]:
+    """Stream log realtime từ session_state."""
+    if "activities" not in st.session_state:
+        st.session_state["activities"] = []
+
+    last_len = len(st.session_state["activities"])
+    while st.session_state.get("is_generating", False):
+        logs = st.session_state["activities"]
+        if len(logs) > last_len:
+            for log in logs[last_len:]:
+                yield format_log(log)
+            last_len = len(logs)
+        time.sleep(0.1)
+
+    # Kiểm tra sót log cuối
+    logs = st.session_state["activities"]
+    for log in logs[last_len:]:
+        yield format_log(log)
+
 
 def render_activity_log():
-    """Hiển thị log hoạt động realtime: tự cập nhật khi stream chạy."""
-    st.subheader("⚡ Activity")
+    """UI phần log realtime (dark mode)."""
+    st.markdown("### ⚡ Hoạt động realtime")
+    st.session_state.setdefault("activities", [])
 
-    activities = st.session_state.get("activities", [])
-    if not activities:
-        st.info("Không có hoạt động nào.")
-        return
+    log_container = st.container(height=420, border=False)
+    with log_container:
+        for log in st.session_state["activities"][-8:]:
+            st.markdown(format_log(log), unsafe_allow_html=True)
 
-    for activity in activities:
-        summary = summarize_activity(activity)
-        bg = get_bg_color(summary)
-        time = activity.get("time", datetime.now().strftime("%H:%M:%S"))
-
-        st.markdown(
-            f"""
-            <div style="
-                background:{bg};
-                border:1px solid {STYLE['border']};
-                border-radius:10px;
-                padding:8px 12px;
-                margin-bottom:8px;
-                display:flex;
-                justify-content:space-between;
-                align-items:center;
-                font-size:13px;
-                color:{STYLE['text_color']};
-                box-shadow:0 1px 2px rgba(0,0,0,0.05);
-                transition:background 0.2s ease;
-            ">
-                <div>{summary}</div>
-                <div style='color:{STYLE['time_color']};font-size:11px'>{time}</div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
+    if st.session_state.get("is_generating", False):
+        with log_container:
+            st.write_stream(activity_stream())

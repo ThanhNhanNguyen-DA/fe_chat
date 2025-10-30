@@ -1,18 +1,28 @@
 import streamlit as st
-import threading
-from streamlit.runtime.scriptrunner import add_script_run_ctx
+import requests
 from src.api import get_ai_response_stream
 from src.chat_utils import create_new_chat, log_ai_activity
 
+COLORS = {
+    "bg_user": "#e2e8f0",
+    "bg_assistant": "#f1f5f9",
+    "border": "#cbd5e1",
+    "text": "#1e293b",
+    "accent": "#3b82f6",
+}
+
+
 def render_chat_area():
-    """Hiển thị chat và stream phản hồi theo thời gian thực bằng thread."""
+    """Khung chat realtime (bo góc, màu dịu)."""
     st.header("💬 Chat")
 
-    # --- Init state ---
-    if "is_generating" not in st.session_state:
-        st.session_state.is_generating = False
-    if "stop_generation" not in st.session_state:
-        st.session_state.stop_generation = False
+    # --- INIT STATE ---
+    for key, val in {
+        "is_generating": False,
+        "stop_generation": False,
+        "activities": [],
+    }.items():
+        st.session_state.setdefault(key, val)
 
     if not st.session_state.current_chat_id and not st.session_state.chat_history:
         create_new_chat()
@@ -23,66 +33,109 @@ def render_chat_area():
 
     current_chat = st.session_state.chat_history[st.session_state.current_chat_id]
 
-    chat_container = st.container(height=400)
+    # --- HIỂN THỊ LỊCH SỬ ---
+    chat_container = st.container(height=420)
     with chat_container:
         for msg in current_chat["messages"]:
-            with st.chat_message(msg["role"]):
-                st.markdown(msg["content"])
+            bg = COLORS["bg_user"] if msg["role"] == "user" else COLORS["bg_assistant"]
+            role = "👤 Bạn" if msg["role"] == "user" else "🤖 Trợ lý"
+            st.markdown(
+                f"""
+                <div style="
+                    background:{bg};
+                    color:{COLORS['text']};
+                    border:1px solid {COLORS['border']};
+                    border-radius:12px;
+                    padding:10px 14px;
+                    margin-bottom:10px;">
+                    <b>{role}:</b> {msg['content']}
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
 
-    # --- Model Selection ---
-    model_options = get_ai_response_stream()
-    selected_model = st.selectbox(
-        "Chọn Model:", model_options, disabled=st.session_state.is_generating
-    )
+    # --- MODEL HIỆN TẠI ---
+    def fetch_current_model():
+        try:
+            res = requests.get("http://localhost:8000/current-model", timeout=5)
+            return res.json().get("model", "Không có model") if res.status_code == 200 else "Không có model"
+        except Exception as e:
+            st.warning(f"Lỗi khi lấy model: {e}")
+            return "Không có model"
 
-    # --- Input + Stop ---
+    st.session_state.setdefault("selected_model", fetch_current_model())
+    st.selectbox("### 🧠 Model hiện tại:", [st.session_state.selected_model], index=0, disabled=True)
+
+    # --- INPUT + STOP ---
     c1, c2 = st.columns([10, 1])
     with c1:
         prompt = st.chat_input("Nhập câu hỏi...", disabled=st.session_state.is_generating)
     with c2:
-        if st.session_state.is_generating:
-            if st.button("⏹", use_container_width=True, type="primary"):
-                st.session_state.stop_generation = True
-                st.toast("🛑 Dừng tiến trình")
+        if st.session_state.is_generating and st.button("⏹", use_container_width=True, type="primary"):
+            st.session_state.stop_generation = True
+            st.toast("🛑 Dừng tiến trình")
 
-    # --- Gửi câu hỏi ---
-    if prompt and not st.session_state.is_generating:
-        current_chat["messages"].append({"role": "user", "content": prompt})
-        current_chat["messages"].append({"role": "assistant", "content": ""})
-        st.session_state.is_generating = True
+    if not prompt or st.session_state.is_generating:
+        return
 
-        placeholder = st.empty()
+    # --- GỬI CÂU HỎI ---
+    current_chat["messages"].append({"role": "user", "content": prompt})
+    st.session_state.is_generating = True
 
-        def stream():
-            full = ""
-            model_name = node_name = None
-            for packet in get_ai_response_stream(prompt, selected_model, activity="chat"):
-                if st.session_state.stop_generation:
-                    break
+    with chat_container:
+        st.markdown(
+            f"""
+            <div style="
+                background:{COLORS['bg_user']};
+                color:{COLORS['text']};
+                border:1px solid {COLORS['border']};
+                border-radius:12px;
+                padding:10px 14px;
+                margin-bottom:10px;">
+                <b>👤 Bạn:</b> {prompt}
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
 
-                text = packet.get("content_chunk", "")
-                model_name = packet.get("ls_model_name") or model_name
-                meta = packet.get("metadata", {})
-                node_name = meta.get("langgraph_node") or node_name
-                full += text
+    def stream_response():
+        full_text = ""
+        model_name = None
+        for packet in get_ai_response_stream(prompt, st.session_state.selected_model, "chat"):
+            if st.session_state.stop_generation:
+                log_ai_activity("🛑 Dừng tiến trình", "Người dùng nhấn Stop.")
+                break
 
-                header = (
-                    f"**Model:** `{model_name}` | **Node:** `{node_name}`"
-                    if model_name and node_name
-                    else ""
-                )
-                placeholder.markdown(f"{header}\n\n{full}▌")
-                log_ai_activity(
-                    "📡 Stream chunk hiển thị", f"Node {node_name} - Model {model_name}"
-                )
+            text = packet.get("content_chunk", "")
+            if not text:
+                continue
 
-            placeholder.markdown(
-                f"**Model:** `{model_name}` | **Node:** `{node_name}`\n\n{full}"
-            )
-            current_chat["messages"][-1]["content"] = full
-            st.session_state.is_generating = False
-            st.session_state.stop_generation = False
+            meta = packet.get("metadata", {})
+            node = meta.get("langgraph_node", "?")
+            model_name = meta.get("ls_model_name") or st.session_state.selected_model
 
-        t = threading.Thread(target=stream)
-        add_script_run_ctx(t)
-        t.start()
+            full_text += text
+            log_ai_activity("📡 Chunk mới", f"Node: {node} | Model: {model_name}", meta)
+            yield text
+
+        log_ai_activity("✅ Hoàn tất tiến trình", f"Mô hình: {model_name or st.session_state.selected_model}")
+
+    with chat_container:
+        st.markdown(
+            f"""
+            <div style="
+                background:{COLORS['bg_assistant']};
+                color:{COLORS['text']};
+                border:1px solid {COLORS['border']};
+                border-radius:12px;
+                padding:10px 14px;
+                margin-bottom:10px;">
+                <b>🤖 Trợ lý:</b> """,
+            unsafe_allow_html=True,
+        )
+        full_reply = st.write_stream(stream_response())
+        st.markdown("</div>", unsafe_allow_html=True)
+
+    current_chat["messages"].append({"role": "assistant", "content": full_reply})
+    st.session_state.is_generating = False
+    st.session_state.stop_generation = False

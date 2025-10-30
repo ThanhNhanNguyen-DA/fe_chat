@@ -19,28 +19,26 @@ class ChatRequest:
 def get_ai_response_stream(
     message: Optional[str] = None,
     model_choice: Optional[str] = None,
-    activity: Optional[str] = None
+    activity: Optional[str] = None,
 ) -> Generator[Dict, None, None]:
     """Gửi request tới backend và đọc stream JSON."""
     api_url = build_url("/chat/stream")
 
-    # Chỉ trả danh sách model
     if not message and not model_choice:
         return ["gpt-5-mini", "gpt-4-turbo", "gemini-1.5-pro"]
 
     session = st.session_state
     if "session_id" not in session:
         session.session_id = str(uuid.uuid4())
-    conversation_id = session.get("current_chat_id") or session.session_id
 
     payload = {
         "message": message or "",
-        "conversation_id": conversation_id,
+        "conversation_id": session.get("current_chat_id") or session.session_id,
         "model_choice": model_choice,
         "activity": activity,
     }
 
-    log_ai_activity("🔁 Đang gửi yêu cầu ", str(payload))
+    log_ai_activity("🔁 Gửi yêu cầu", str(payload))
 
     try:
         with requests.post(api_url, params=payload, stream=True, timeout=get_stream_timeout()) as res:
@@ -52,25 +50,20 @@ def get_ai_response_stream(
                     data = json.loads(line.decode("utf-8"))
                     event = data.get("event")
                     msg = data.get("message", {})
-                    metadata = data.get("metadata", {})
+                    meta = data.get("metadata", {})
 
                     if event == "message" and msg.get("type") == "AIMessageChunk":
                         chunk = msg["data"]
-                        content_chunk = chunk.get("content", "")
-                        model_name = metadata.get("ls_model_name")
-
-                        if metadata:
-                            log_ai_activity(
-                                "📡 Nhận stream chunk",
-                                f"Node {metadata.get('langgraph_node')}, Step {metadata.get('langgraph_step')}",
-                                metadata=metadata,
-                            )
-
                         yield {
-                            "content_chunk": content_chunk,
-                            "ls_model_name": model_name,
-                            "metadata": metadata,
+                            "content_chunk": chunk.get("content", ""),
+                            "ls_model_name": meta.get("ls_model_name"),
+                            "metadata": meta,
                         }
+                        log_ai_activity(
+                            "📡 Nhận chunk",
+                            f"Node {meta.get('langgraph_node')}, Step {meta.get('langgraph_step')}",
+                            meta,
+                        )
 
                     elif event in ("close", "end"):
                         break
@@ -81,6 +74,6 @@ def get_ai_response_stream(
         log_ai_activity("✅ Hoàn tất phản hồi", f"Session: {session.session_id}")
 
     except Exception as e:
-        err = f"❌ Lỗi stream từ backend: {e}"
+        err = f"❌ Lỗi stream backend: {e}"
         log_ai_activity("Lỗi stream backend", err)
         yield {"content_chunk": err, "ls_model_name": None, "metadata": {}}

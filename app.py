@@ -15,24 +15,16 @@ try:
 except Exception:
     pass
 
-
-# ========== PAGE CONFIG ==========
+# ---------------- PAGE CONFIG ----------------
 st.set_page_config(**get_page_config())
-
-# ========== CSS ==========
 load_css()
-
-# ========== SESSION INIT ==========
 init_session_state()
 
-# ========== SIDEBAR ==========
+# ---------------- LAYOUT ----------------
 render_sidebar()
 
-# ========== MAIN LAYOUT ==========
 col_chat, col_activity = st.columns([2, 1])
-
 with col_chat:
     render_chat_area()
-
 with col_activity:
     render_activity_log()
