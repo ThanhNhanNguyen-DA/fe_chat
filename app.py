@@ -6,6 +6,9 @@ from src.activity_log import render_activity_log
 from style.load_css import load_css
 from src.login import login
 from src.config import get_page_config
+from style.load_css import load_css
+
+load_css()
 
 # ---------------- AUTH GATE ----------------
 try:

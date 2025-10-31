@@ -1,99 +1,118 @@
 import streamlit as st
 
 def load_css():
-    """Tải tất cả CSS động, tự động thích ứng với Light/Dark Mode."""
+    """Tải CSS cho toàn bộ app (sidebar + chat + activity + chat_input luôn hiển thị)."""
     st.markdown("""
-<style>
-/* CSS này dùng biến của Streamlit, 
-nên sẽ tự động đổi màu theo theme (Light/Dark) của người dùng.
-*/
+    <style>
+    /* === TOÀN BỘ APP === */
+    html, body, .stApp {
+        background-color: #262730 !important;
+        color: #ffffff !important;
+    }
 
-/* Đảm bảo các thành phần chính CỐ ĐỊNH CHIỀU RỘNG/DÀI và CÓ PADDING */
-section.main, .stApp {
-    max-width: 2000px; /* Cố định chiều rộng tối đa */
-    min-height: 80vh; /* Cố định chiều DÀI (cao) tối thiểu */
-    margin: auto; /* Tự động căn giữa */
-    padding: 0 1.5rem; /* Thêm đệm trái/phải để không bị dính cạnh */
-}
+    /* === SIDEBAR === */
+    [data-testid="stSidebar"] {
+        background: linear-gradient(180deg, #0078D7 0%, #005EB8 100%) !important;
+        color: #ffffff !important;
+        border-right: 2px solid rgba(0, 0, 0, 0.4);
+        box-shadow: 2px 0 8px rgba(0, 0, 0, 0.4);
+    }
+    [data-testid="stSidebar"] * {
+        color: #ffffff !important;
+    }
+    [data-testid="stSidebar"] button {
+        background-color: #0A84FF !important;
+        color: white !important;
+        border-radius: 8px !important;
+        border: 1px solid #4CB2FF !important;
+        transition: all 0.25s ease-in-out;
+    }
+    [data-testid="stSidebar"] button:hover {
+        background-color: #38A3FF !important;
+        transform: scale(1.03);
+        box-shadow: 0 0 10px rgba(56,163,255,0.6);
+    }
 
-/* Tin nhắn của User */
-.user-msg {
-    /* Dùng màu nền chính và viền màu nhấn */
-    background-color: var(--streamlit-background-color);
-    border: 1px solid var(--streamlit-primary-color);
-    color: var(--streamlit-text-color);
-    border-radius: 16px;
-    padding: 8px 12px; 
-    margin: 4px 0 4px 15px; 
-    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-}
+    /* === HEADER === */
+    [data-testid="stHeader"] {
+        background-color: #262730 !important;
+        color: #ffffff !important;
+        border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
 
-/* Tin nhắn của Assistant */
-.assistant-msg {
-    /* Dùng màu nền phụ */
-    background-color: var(--streamlit-secondary-background-color);
-    color: var(--streamlit-text-color);
-    border-radius: 16px;
-    padding: 8px 12px; 
-    margin: 4px 15px 4px 0; 
-    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-}
+    /* === KHUNG CHAT === */
+    .stChatMessage {
+        background-color: #1f2024 !important;
+        border-radius: 10px !important;
+        border: 1px solid rgba(255,255,255,0.08) !important;
+        padding: 10px !important;
+    }
 
-/* Activity log styling */
-.activity-item {
-    /* Dùng màu nền phụ */
-    background-color: var(--streamlit-secondary-background-color);
-    border-left: 4px solid var(--streamlit-primary-color);
-    color: var(--streamlit-text-color);
-    padding: 6px 10px; 
-    border-radius: 6px;
-    margin-bottom: 4px; 
-}
+    /* === ANIMATION viền sáng xung nhịp === */
+    @keyframes pulse-blue {
+        0%   { box-shadow: 0 0 10px rgba(0,120,215,0.4); }
+        50%  { box-shadow: 0 0 22px rgba(76,178,255,1); }
+        100% { box-shadow: 0 0 10px rgba(0,120,215,0.4); }
+    }
 
-/*
---- Tinh chỉnh giao diện chung ---
-*/
+    /* === Ô NHẬP CÂU HỎI: LUÔN CÓ BORDER + SHADOW === */
+    section[data-testid="stChatInput"] {
+        background-color: #1f2024 !important;
+        border: 1.8px solid #0078D7 !important;
+        border-radius: 12px !important;
+        padding: 10px 14px !important;
+        margin-top: 10px !important;
+        margin-bottom: 8px !important;
+        transition: all 0.3s ease-in-out;
+        box-shadow: 0 0 8px rgba(0, 120, 215, 0.3) !important; /* ✅ luôn hiển thị */
+    }
 
-/* Bo tròn ô nhập text */
-textarea {
-    border-radius: 10px !important;
-    padding: 10px !important;
-    font-size: 15px !important;
-    /* Màu sắc sẽ tự động theo theme */
-}
+    /* Hover/Focus — sáng hơn */
+    section[data-testid="stChatInput"]:hover,
+    section[data-testid="stChatInput"]:focus-within {
+        border-color: #4cb2ff !important;
+        box-shadow: 0 0 16px rgba(76,178,255,0.8) !important;
+        background-color: #25272b !important;
+    }
 
-/* Bo tròn ô chọn model */
-div[data-baseweb="select"] {
-    border-radius: 8px !important;
-    background-color: var(--streamlit-secondary-background-color) !important;
-    font-size: 13px !important;
-    padding: 2px !important;
-}
-/* Chữ trong ô select */
-div[data-baseweb="select"] div {
-    /* Màu chữ sẽ tự động theo theme */
-    background-color: transparent !important;
-}
+    /* Khi AI đang phản hồi (glow-active) */
+    .glow-active {
+        border-color: #4cb2ff !important;
+        animation: pulse-blue 1.8s infinite ease-in-out !important;
+    }
 
-/* Bo tròn các nút */
-button[kind="secondary"], button[kind="primary"] {
-    border-radius: 10px !important;
-}
-.small-pause-btn {
-        background-color: #ef4444;
-        color: white;
-        border: none;
-        border-radius: 6px;
-        padding: 6px 8px;
-        font-size: 13px;
-        width: 100%;
-        cursor: pointer;
-            }
-.small-pause-btn:hover {
-        background-color: #dc2626;
-            }
-</style>
+    /* === Textarea === */
+    section[data-testid="stChatInput"] textarea {
+        background: transparent !important;
+        color: #e2e8f0 !important;
+        font-size: 16px !important;
+        padding: 8px 10px !important;
+        border: none !important;
+        outline: none !important;
+    }
 
-""", 
-unsafe_allow_html=True)
+    /* === NÚT GỬI (➤) === */
+    button[data-testid="stChatInputSubmit"] {
+        color: #60a5fa !important;
+        transition: all 0.25s ease-in-out;
+    }
+    button[data-testid="stChatInputSubmit"]:hover {
+        color: #93c5fd !important;
+        transform: scale(1.15);
+    }
 
+    /* === SELECTBOX (CHỌN MODEL) === */
+    div[data-baseweb="select"] > div {
+        background-color: #1f2024 !important;
+        border: 1.5px solid #0078D7 !important;
+        border-radius: 10px !important;
+        color: #ffffff !important;
+        padding: 4px 10px !important;
+        transition: 0.3s ease-in-out;
+    }
+    div[data-baseweb="select"]:focus-within > div {
+        border-color: #4cb2ff !important;
+        box-shadow: 0 0 10px rgba(76,178,255,0.5);
+    }
+    </style>
+    """, unsafe_allow_html=True)
