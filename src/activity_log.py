@@ -72,7 +72,7 @@ def format_log_html(log: Dict[str, Any]) -> str:
 # -----------------------------
 def render_activity_log():
     """Hiển thị log realtime + reasoning + toggle."""
-    st.markdown("### ⚡ AI Activity")
+    st.markdown("### ⚡ Activity")
 
     st.session_state.setdefault("activities", [])
     st.session_state.setdefault("show_activity", True)

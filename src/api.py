@@ -5,7 +5,7 @@ import streamlit as st
 from typing import Generator, Dict, Optional
 from dataclasses import dataclass
 from src.config import build_url, get_stream_timeout
-from src.chat_utils import log_ai_activity
+from src.activity_log import log_ai_activity
 
 
 @dataclass

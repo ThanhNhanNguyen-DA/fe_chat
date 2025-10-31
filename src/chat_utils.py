@@ -1,37 +1,9 @@
 import streamlit as st
-from dataclasses import dataclass, asdict
 from datetime import datetime
-from typing import Optional, Dict, Any
-
-
-@dataclass
-class ActivityEntry:
-    time: str
-    action: str
-    details: str
-    metadata: Optional[Dict[str, Any]] = None
-
-    @staticmethod
-    def create(action: str, details: str = "", metadata=None):
-        return ActivityEntry(
-            time=datetime.now().strftime("%H:%M:%S"),
-            action=action,
-            details=details,
-            metadata=metadata or {},
-        )
-
-
-def log_ai_activity(action: str, details: str = "", metadata=None) -> Dict[str, Any]:
-    """Ghi log và trả về dict (dùng cho stream)."""
-    entry = ActivityEntry.create(action, details, metadata)
-    entry_dict = asdict(entry)
-    st.session_state.setdefault("activities", [])
-    st.session_state.activities.append(entry_dict)
-    return entry_dict
-
+from typing import Dict
+from src.activity_log import log_ai_activity  # ✅ import đúng
 
 def create_new_chat():
-    """Tạo chat mới."""
     chat_id = f"chat_{st.session_state.chat_counter}"
     st.session_state.chat_counter += 1
     st.session_state.chat_history[chat_id] = {
@@ -46,7 +18,6 @@ def create_new_chat():
 
 
 def generate_chat_title(user_message: str):
-    """Sinh tiêu đề ngắn gọn từ câu đầu tiên."""
     title = user_message.strip()
     if len(title) > 30:
         title = f"{title[:27]}..."

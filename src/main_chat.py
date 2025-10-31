@@ -2,6 +2,7 @@ import streamlit as st
 from src.api import get_ai_response_stream
 from src.chat_utils import create_new_chat
 from typing import List, Dict, Any, Optional
+from src.activity_log import log_ai_activity
 
 
 # --- 1. Khởi tạo Session State ---
